@@ -4,9 +4,18 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Products') }}
             </h2>
-            <a href="{{ route('product.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Add Product
-            </a>
+            <div class="flex gap-2">
+                @can('export-product')
+                <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Export
+                </button>
+                @endcan
+                @can('manage-product')
+                <a href="{{ route('product.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Add Product
+                </a>
+                @endcan
+            </div>
         </div>
     </x-slot>
 
@@ -40,12 +49,16 @@
                                         <td class="p-4">{{ $product->user->name ?? $product->user_id }}</td>
                                         <td class="p-4 flex gap-3">
                                             <a href="{{ route('product.show', $product->id) }}" class="text-blue-500 hover:underline">View</a>
+                                            @can('update', $product)
                                             <a href="{{ route('product.edit', $product->id) }}" class="text-yellow-500 hover:underline">Edit</a>
+                                            @endcan
+                                            @can('delete', $product)
                                             <form action="{{ route('product.delete', $product->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-500 hover:underline">Delete</button>
                                             </form>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ProductController extends Controller
 {
@@ -45,6 +46,8 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        Gate::authorize('update', $product);
+        
         $users = User::orderBy('name')->get();
 
         return view('product.edit', compact('product', 'users'));
@@ -53,6 +56,7 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+        Gate::authorize('update', $product);
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -69,6 +73,7 @@ class ProductController extends Controller
     public function delete($id)
     {
         $product = Product::findOrFail($id);
+        Gate::authorize('delete', $product);
 
         $product->delete();
 
