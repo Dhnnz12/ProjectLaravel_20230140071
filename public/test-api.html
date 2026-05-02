@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini API Tester (Pengganti Scramble)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; color: #333; }
+        h1, h2 { color: #444; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .token-display { font-size: 0.9em; word-break: break-all; color: #e83e8c; }
+    </style>
+</head>
+<body>
+
+    <h1>Mini API Tester (Pengganti Scramble)</h1>
+    <p>Karena Scramble gagal diinstall akibat error SSL Composer di komputermu, gunakan halaman ini sebagai pengganti Postman untuk mengetes API.</p>
+
+    <!-- STEP 1: LOGIN -->
+    <div class="card">
+        <h2>1. Login (Dapatkan Token)</h2>
+        <div class="form-group">
+            <label>Email Admin</label>
+            <input type="text" id="login_email" value="admin@example.com"> <!-- Ganti default jika perlu -->
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login_password" value="password123">
+        </div>
+        <button onclick="login()">Login (POST /api/login)</button>
+        <p><strong>Token Anda:</strong> <span class="token-display" id="token_display">Belum ada token (Silakan login)</span></p>
+    </div>
+
+    <!-- STEP 2: TEST ENDPOINT -->
+    <div class="card">
+        <h2>2. Test Endpoint (Category / Product)</h2>
+        
+        <div class="form-group">
+            <label>Method</label>
+            <select id="req_method">
+                <option value="GET">GET (Read)</option>
+                <option value="POST">POST (Create)</option>
+                <option value="PUT">PUT (Update)</option>
+                <option value="DELETE">DELETE (Delete)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Endpoint URL</label>
+            <select id="req_url">
+                <option value="/api/categories">/api/categories (List / Create)</option>
+                <option value="/api/categories/1">/api/categories/{id} (Show / Update / Delete)</option>
+                <option value="/api/products">/api/products (List / Create)</option>
+                <option value="/api/products/1">/api/products/{id} (Show / Update / Delete)</option>
+            </select>
+            <small>Ubah angka 1 di atas menjadi ID yang sesuai di database kamu jika ingin edit/hapus.</small>
+        </div>
+
+        <div class="form-group">
+            <label>Body (JSON) - Hanya untuk POST dan PUT</label>
+            <textarea id="req_body" rows="6">{
+    "name": "Kategori Contoh"
+}</textarea>
+        </div>
+
+        <button onclick="sendRequest()">Kirim Request</button>
+    </div>
+
+    <!-- RESPONSE -->
+    <div class="card">
+        <h2>Hasil Response</h2>
+        <pre id="response_output">Hasil akan muncul di sini...</pre>
+    </div>
+
+    <script>
+        let currentToken = '';
+
+        async function login() {
+            const email = document.getElementById('login_email').value;
+            const password = document.getElementById('login_password').value;
+            const output = document.getElementById('response_output');
+            
+            output.innerText = "Loading...";
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+                output.innerText = JSON.stringify(data, null, 4);
+
+                if (data.access_token) {
+                    currentToken = data.access_token;
+                    document.getElementById('token_display').innerText = currentToken;
+                    alert('Login Sukses! Token berhasil disimpan.');
+                }
+            } catch (err) {
+                output.innerText = "Error: " + err;
+            }
+        }
+
+        async function sendRequest() {
+            const method = document.getElementById('req_method').value;
+            let url = document.getElementById('req_url').value;
+            const bodyStr = document.getElementById('req_body').value;
+            const output = document.getElementById('response_output');
+
+            output.innerText = "Loading...";
+
+            // Jika user memilih {id}, kita bisa kasih prompt untuk ubah id nya
+            if(url.includes('{id}')) {
+                let id = prompt("Masukkan ID (misal: 1, 2, 3):", "1");
+                if(!id) return;
+                url = url.replace('{id}', id);
+            }
+
+            const options = {
+                method: method,
+                headers: { 
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + currentToken
+                }
+            };
+
+            if (method === 'POST' || method === 'PUT') {
+                try {
+                    // Validasi JSON Format
+                    JSON.parse(bodyStr);
+                    options.body = bodyStr;
+                } catch(e) {
+                    output.innerText = "Error: Format JSON di kolom Body tidak valid!";
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch(url, options);
+                let text = await res.text();
+                try {
+                    let json = JSON.parse(text);
+                    output.innerText = JSON.stringify(json, null, 4);
+                } catch(e) {
+                    output.innerText = text;
+                }
+            } catch (err) {
+                output.innerText = "Error: " + err;
+            }
+        }
+    </script>
+</body>
+</html>
