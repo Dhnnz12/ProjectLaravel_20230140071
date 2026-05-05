@@ -10,7 +10,9 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $productCount = \App\Models\Product::count();
+    $categoryCount = \App\Models\Category::count();
+    return view('dashboard', compact('productCount', 'categoryCount'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
